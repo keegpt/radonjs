@@ -1,0 +1,36 @@
+{
+  "name": "@keegpt/radonjs",
+  "version": "1.0.0",
+  "description": "An event backbone for microservices architectures",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keegpt/radonjs.git"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^13.7.4",
+    "typescript": "^3.8.2"
+  },
+  "keywords": [],
+  "author": "keegpt",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/keegpt/radonjs/issues"
+  },
+  "homepage": "https://github.com/keegpt/radonjs#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}
