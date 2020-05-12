@@ -41,6 +41,11 @@ export default class Client {
         return new Promise(async (resolve, reject) => {
             const cid = getId();
 
+            await this.subscribe({ name: cid, mode: EventModeEnum.ACKNOWLEDGE }, (data: any) => {
+                this.unsubscribe(cid);
+                resolve(data);
+            });
+
             const payload = {
                 cid,
                 event: {
@@ -53,11 +58,6 @@ export default class Client {
                 method: 'POST',
                 body: payload,
                 json: true
-            });
-
-            this.subscribe({ name: cid, mode: EventModeEnum.ACKNOWLEDGE }, (data: any) => {
-                this.unsubscribe(cid);
-                resolve(data);
             });
         });
     }
@@ -105,6 +105,7 @@ export default class Client {
             mode: event.mode,
             callback: async (cid: string, data: any) => {
                 const result = await callback(data);
+
                 if (event.mode === EventModeEnum.LOAD_BALANCE) {
                     await this.publish(cid, result);
                 }

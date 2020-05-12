@@ -23,7 +23,7 @@ export default class Event {
 
                 for (let i = 0; i < this.subscribers.length; i++) {
                     const subscriber = this.subscribers[i];
-                    if(subscriber.mode === EventModeEnum.LOAD_BALANCE) {
+                    if (subscriber.mode === EventModeEnum.LOAD_BALANCE) {
                         loadBalancers.push(subscriber);
                     } else {
                         acknowledgers.push(subscriber);
@@ -65,11 +65,13 @@ export default class Event {
     }
 
     subscribe(client: IClient, mode: EventModeEnum) {
-        this.subscribers.push({ client, mode });
+        if (!this.subscribers.find((sub) => sub.client.host === client.host && sub.client.port === client.port && sub.client.path === client.path)) {
+            this.subscribers.push({ client, mode });
+        }
     }
 
     unsubscribe(client: IClient) {
-        const index = this.subscribers.findIndex((sub) => sub.client.host === client.host && sub.client.port === client.port);
+        const index = this.subscribers.findIndex((sub) => sub.client.host === client.host && sub.client.port === client.port && sub.client.path === client.path);
 
         if (index > -1) {
             this.subscribers.splice(index, 1);
