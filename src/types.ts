@@ -22,8 +22,8 @@ export interface IEvent {
 }
 
 export enum EventModeEnum {
-    LOAD_BALANCE,
-    ACKNOWLEDGE
+    ACKNOWLEDGE,
+    LOAD_BALANCE
 }
 
 export interface IEventOptions {
