@@ -78,6 +78,7 @@ Some of this are simple to do, i'm just trying to find time :(
 * Create an event sub queue for handle responses, instead of creating a new event + queue for waiting responses
 * Create a system to get all updated stats from each event
 * Export modes interface to use when subscribing
+* Block a client from subscribing the same event, twice.
 
 ## Docs
 
