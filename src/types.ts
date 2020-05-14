@@ -72,3 +72,15 @@ export interface IClientEvent {
     mode: EventModeEnum;
     callback?: (cid: string, data: any) => any;
 }
+
+export interface IClientWaiting {
+    cid: string
+    event: { name: string };
+    resolve: (data: any) => void;
+    reject: (error: Error) => void;
+}
+
+export enum EventActionEnum {
+    CONTINUE,
+    WAIT
+}
