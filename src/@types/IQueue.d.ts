@@ -1,0 +1,3 @@
+interface IQueue {
+    messages: IMessage[];
+}

@@ -10,9 +10,13 @@
         "declaration": true,
         "outDir": "./lib",
         "strict": true,
+        "typeRoots": [
+            "node_modules/@types",
+            "src/@types"
+        ]
     },
     "include": [
-        "src"
+        "src/**/*",
     ],
     "exclude": [
         "node_modules",
