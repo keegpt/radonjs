@@ -12,7 +12,7 @@ export default class Event {
         this.queue = new Queue({
             handler: async (payload, next, onCancel) => {
                 onCancel(() => {
-
+                    //todo: if cancel, then abort all pending requests, and send new ones with timeout error
                 });
 
                 const requests = [];
@@ -51,7 +51,7 @@ export default class Event {
 
                     requests.push(request.post(`${subscriber.client.host}:${subscriber.client.port}${subscriber.client.path}/onevent`, {
                         method: 'POST',
-                        body: { cid: payload.cid, event: { name: this.options.name }, data: payload.data },
+                        body: { cid: payload.cid, event: { name: this.options.name }, data: payload.data, error: payload.error },
                         json: true
                     }));
                 }

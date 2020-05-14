@@ -52,13 +52,14 @@ export default class Server {
     }
 
     handlePublish(req: express.Request, res: express.Response, _next: express.NextFunction) {
-        const { cid, data, event } : { cid: string, data: any, event: IEvent } = req.body;
+        const { cid, event, data, error } : { cid: string, data: any, event: IEvent, error: string | null | undefined } = req.body;
 
         const mEvent = this.getEvent(event.name);
 
         if (mEvent) {
             mEvent.publish({
                 cid,
+                error,
                 data
             });
         }

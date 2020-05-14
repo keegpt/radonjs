@@ -37,6 +37,7 @@ export interface ISubscriber {
 
 export interface IQueueItemPayload {
     cid: string;
+    error: string | null | undefined;
     data: any
 }
 
@@ -75,7 +76,6 @@ export interface IClientEvent {
 
 export interface IClientWaiting {
     cid: string
-    event: { name: string };
     resolve: (data: any) => void;
     reject: (error: Error) => void;
 }

@@ -34,6 +34,10 @@ export default class Client {
                     data
                 };
 
+                console.log("publishing in", eventName, cid);
+
+                this.subscribe(cid);
+
                 await request.post(`${this.serverEndpoint}/publish`, {
                     method: 'POST',
                     body: payload,
@@ -44,39 +48,40 @@ export default class Client {
                     return resolve();
                 }
 
-                this.wait(eventName, cid, resolve, reject);
+                this.wait(cid, resolve, reject);
             } catch (error) {
                 reject(error);
             }
         });
     }
 
-    wait(eventName: string, cid: string, resolve: (data: any) => void, reject: (error: Error) => void) {
+    wait(cid: string, resolve: (data: any) => void, reject: (error: Error) => void) {
+        console.log("wait for", cid);
         this.waiting.push({
             cid,
-            event: {
-                name: eventName
-            },
             resolve,
             reject
-        })
+        });
     }
 
     async handleEvent(req: express.Request, res: express.Response, _next: express.NextFunction) {
         const { cid, event, data, error } = req.body;
 
-        const index = this.waiting.findIndex((ev) => ev.cid === cid);
+        console.log("handling in", event.name, cid);
+
+        const index = this.waiting.findIndex((ev) => ev.cid === event.name);
 
         if (index > -1) {
             const waiting = this.waiting[index];
 
             if (error) {
-                waiting.reject(error);
+                waiting.reject(new Error(error));
             } else {
                 waiting.resolve(data);
             }
 
             this.waiting.splice(index, 1);
+            this.unsubscribe(event.name);
         } else {
             const mEvent = this.subscribed.find((ev) => ev.name === event.name);
 
@@ -88,7 +93,7 @@ export default class Client {
         return res.status(200).send();
     }
 
-    async subscribe(eventOptions: string | IClientEvent, callback: (data: any) => any) {
+    async subscribe(eventOptions: string | IClientEvent, callback: (data: any) => any = () => null) {
         let event: IClientEvent;
         if (typeof eventOptions !== 'object') {
             event = {
@@ -123,14 +128,31 @@ export default class Client {
                     const result = await callback(data);
 
                     if (event.mode === EventModeEnum.LOAD_BALANCE) {
-                        await this.returnData(cid, null, result);
+                        await this.returnData(cid, cid, null, result);
                     }
                 } catch (error) {
                     if (event.mode === EventModeEnum.LOAD_BALANCE) {
-                        await this.returnData(cid, error, null);
+                        await this.returnData(cid, cid, error.message, null);
                     }
                 }
             }
+        });
+    }
+
+    async returnData(eventName: string, cid: string, error: string | null, data: any) {
+        const payload = {
+            cid,
+            event: {
+                name: eventName
+            },
+            data,
+            error
+        };
+
+        await request.post(`${this.serverEndpoint}/publish`, {
+            method: 'POST',
+            body: payload,
+            json: true
         });
     }
 
