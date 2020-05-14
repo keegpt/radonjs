@@ -10,7 +10,6 @@ export interface IEventOptions {
 }
 
 export interface IClient {
-    uid: string;
     host: string;
     port: string;
     path: string;
@@ -37,7 +36,7 @@ export interface ISubscriber {
 
 export interface IQueueItemPayload {
     cid: string;
-    error: string | null | undefined;
+    errors: [IError] | undefined;
     data: any
 }
 
@@ -77,10 +76,14 @@ export interface IClientEvent {
 export interface IClientWaiting {
     cid: string
     resolve: (data: any) => void;
-    reject: (error: Error) => void;
+    reject: (error: [IError]) => void;
 }
 
 export enum EventActionEnum {
     CONTINUE,
     WAIT
+}
+
+export interface IError {
+    message: string;
 }

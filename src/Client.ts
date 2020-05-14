@@ -2,7 +2,7 @@ import * as bodyParser from 'body-parser';
 import * as express from 'express';
 import * as request from 'request-promise';
 import { getId } from './utils';
-import { IClientOptions, IClientEvent, EventModeEnum, EventActionEnum, IClientWaiting } from './types';
+import { IClientOptions, IClientEvent, EventModeEnum, EventActionEnum, IClientWaiting, IError } from './types';
 
 export default class Client {
     options: IClientOptions;
@@ -34,9 +34,7 @@ export default class Client {
                     data
                 };
 
-                console.log("publishing in", eventName, cid);
-
-                this.subscribe(cid);
+                this.subscribe(cid); // todo: this should be handle by the server
 
                 await request.post(`${this.serverEndpoint}/publish`, {
                     method: 'POST',
@@ -50,38 +48,39 @@ export default class Client {
 
                 this.wait(cid, resolve, reject);
             } catch (error) {
-                reject(error);
+                reject([{
+                    message: error.message
+                }]);
             }
         });
     }
 
-    wait(cid: string, resolve: (data: any) => void, reject: (error: Error) => void) {
-        console.log("wait for", cid);
+    wait(cid: string, resolve: (data: any) => void, reject: (errors: [IError]) => void) {
         this.waiting.push({
             cid,
             resolve,
             reject
         });
+
+        // todo: if it takes to long to get a response, destroy waiting and call reject
     }
 
     async handleEvent(req: express.Request, res: express.Response, _next: express.NextFunction) {
-        const { cid, event, data, error } = req.body;
-
-        console.log("handling in", event.name, cid);
+        const { cid, event, data, errors } = req.body;
 
         const index = this.waiting.findIndex((ev) => ev.cid === event.name);
 
         if (index > -1) {
             const waiting = this.waiting[index];
 
-            if (error) {
-                waiting.reject(new Error(error));
+            if (errors) {
+                waiting.reject(errors);
             } else {
                 waiting.resolve(data);
             }
 
             this.waiting.splice(index, 1);
-            this.unsubscribe(event.name);
+            this.unsubscribe(event.name); // todo: this should be handle by the server
         } else {
             const mEvent = this.subscribed.find((ev) => ev.name === event.name);
 
@@ -132,21 +131,21 @@ export default class Client {
                     }
                 } catch (error) {
                     if (event.mode === EventModeEnum.LOAD_BALANCE) {
-                        await this.returnData(cid, cid, error.message, null);
+                        await this.returnData(cid, cid, [{ message: error.message }], null);
                     }
                 }
             }
         });
     }
 
-    async returnData(eventName: string, cid: string, error: string | null, data: any) {
+    async returnData(eventName: string, cid: string, errors: [IError] | null, data: any) {
         const payload = {
             cid,
             event: {
                 name: eventName
             },
             data,
-            error
+            errors
         };
 
         await request.post(`${this.serverEndpoint}/publish`, {

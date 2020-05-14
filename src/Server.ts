@@ -1,7 +1,7 @@
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
 import Event from './Event';
-import { IClient, IEvent, IServerOptions } from './types';
+import { IClient, IEvent, IServerOptions, IError } from './types';
 
 export default class Server {
     router: express.Router;
@@ -52,14 +52,14 @@ export default class Server {
     }
 
     handlePublish(req: express.Request, res: express.Response, _next: express.NextFunction) {
-        const { cid, event, data, error } : { cid: string, data: any, event: IEvent, error: string | null | undefined } = req.body;
+        const { cid, event, data, errors } : { cid: string, data: any, event: IEvent, errors: [IError] | undefined } = req.body;
 
         const mEvent = this.getEvent(event.name);
 
         if (mEvent) {
             mEvent.publish({
                 cid,
-                error,
+                errors,
                 data
             });
         }

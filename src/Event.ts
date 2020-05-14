@@ -51,13 +51,28 @@ export default class Event {
 
                     requests.push(request.post(`${subscriber.client.host}:${subscriber.client.port}${subscriber.client.path}/onevent`, {
                         method: 'POST',
-                        body: { cid: payload.cid, event: { name: this.options.name }, data: payload.data, error: payload.error },
+                        body: { cid: payload.cid, event: { name: this.options.name }, data: payload.data, errors: payload.errors },
                         json: true
                     }));
+
+                    // todo: if an error occurs then check if anyone is listening for cid (that's why it should exist a sub event for the same concurrency messages)
                 }
 
+                function allSettled(promises: any[]) {
+                    let wrappedPromises = promises.map((p: any) => Promise.resolve(p)
+                        .then(
+                            val => ({ status: 'fulfilled', value: val }),
+                            err => ({ status: 'rejected', reason: err })));
+                    return Promise.all(wrappedPromises);
+                }
+
+                const results = await allSettled(requests);
+
+                // check for errors, build the response, and sent to the listener of cid... faster solution is to ask for an event with CID as name, and if exists
+                // just send the payload with errors to that event. Be carefull to check if the cid event is not him self, to prevent cycles.
+
                 // should i really wait for requests response?
-                await Promise.all(requests); // bah, would be nice if allSettled worked in typescript
+                // await Promise.all(requests); // bah, would be nice if allSettled worked in typescript
 
                 return next();
             }
