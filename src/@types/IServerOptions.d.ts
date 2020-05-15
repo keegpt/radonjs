@@ -1,6 +1,6 @@
 import * as express from 'express';
 
-interface IServer {
+interface IServerOptions {
     app?: express.Application;
     port?: number;
     path?: string;

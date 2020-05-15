@@ -3,11 +3,11 @@ import ClientManager from "./ClientManager";
 import Queue from "./Queue";
 
 export default class Topic {
-    private options: ITopic;
+    private options: ITopicOptions;
     private consumers: string[] = [];
     private queue: Queue;
 
-    constructor(options: ITopic, clientManager: ClientManager) {
+    constructor(options: ITopicOptions, clientManager: ClientManager) {
         this.options = {
             name: options.name,
             queue: options.queue

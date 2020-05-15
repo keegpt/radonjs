@@ -14,7 +14,7 @@ export default class TopicManager {
         return this.topics.find((topic) => topic.getName() === name);
     }
 
-    publish(_uid: string, topicName: string, message: IMessage) {
+    publish(topicName: string, message: IMessage) {
         const topic = this.findTopic(topicName);
 
         if (!topic) {

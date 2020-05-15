@@ -5,13 +5,13 @@ import Topic from "./Topic";
 
 export default class Queue {
     private clientManager: ClientManager;
-    private options: IQueue;
+    private options: IQueueOptions;
     private topic: Topic;
     private processing: number = 0;
     private running: boolean = false;
     private messages: IMessage[] = [];
 
-    constructor(options: IQueue, topic: Topic, clientManager: ClientManager) {
+    constructor(options: IQueueOptions, topic: Topic, clientManager: ClientManager) {
         this.clientManager = clientManager;
         this.topic = topic;
         this.options = {
@@ -97,6 +97,10 @@ export default class Queue {
 
         for (let i = 0; i < consumers.length; i++) {
             const consumer = consumers[i];
+
+            if (consumer.uid === message.uid) {
+                continue;
+            }
 
             requests.push(request.post(`${consumer.host}:${consumer.port}${consumer.path}/onevent`, {
                 method: 'POST',

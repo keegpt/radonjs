@@ -19,7 +19,7 @@ export default class ClientManager {
         const client = this.clients.find((client) => client.host === host && client.port === port && client.path === path);
 
         if (client) {
-            throw new Error('Client already exists');
+            return client.uid;
         }
 
         const uid = cuid();
