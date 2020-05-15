@@ -1,13 +1,13 @@
-import { ActionEnum } from "../../@types/ActionEnum";
-import { ModeEnum } from "../../@types/ModeEnum";
-import Topic from './Topic';
 import monitor from "../monitor";
+import ClientManager from "./ClientManager";
+import Topic from './Topic';
 
 export default class TopicManager {
+    clientManager: ClientManager;
     topics: Topic[] = [];
 
-    constructor() {
-
+    constructor(clientManager: ClientManager) {
+        this.clientManager = clientManager;
     }
 
     findTopic(name: string) {
@@ -15,9 +15,9 @@ export default class TopicManager {
     }
 
     publish(_uid: string, topicName: string, message: IMessage) {
-        const topic = this.topics.find((topic => topic.getName() === topicName));
-        
-        if(!topic) {
+        const topic = this.findTopic(topicName);
+
+        if (!topic) {
             monitor(`Topic ${topicName} not found`);
             return;
         }
@@ -25,11 +25,19 @@ export default class TopicManager {
         topic.publish(message);
     }
 
-    subscribe(uid: string, topic: string, mode: ModeEnum) {
-
+    subscribe(uid: string, topicName: string) {
+        const topic = this.findTopic(topicName) || new Topic({ name: topicName }, this.clientManager);
+        topic.subscribe(uid);
     }
 
-    unsubscribe(uid: string, topic: string) {
+    unsubscribe(uid: string, topicName: string) {
+        const topic = this.findTopic(topicName);
 
+        if (!topic) {
+            monitor(`Topic ${topicName} not found`);
+            return;
+        }
+
+        topic.unsubscribe(uid);
     }
 }

@@ -1,4 +1,0 @@
-export enum ModeEnum {
-    ACKNOWLEDGE = 'ACKNOWLEDGE',
-    LOAD_BALANCE = 'LOAD_BALANCE'
-}

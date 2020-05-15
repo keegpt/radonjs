@@ -1,18 +1,16 @@
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
-import { ActionEnum } from '../@types/ActionEnum';
 import { IServer } from '../@types/IServer';
-import { ModeEnum } from '../@types/ModeEnum';
 import ClientManager from './core/ClientManager';
 import TopicManager from './core/TopicManager';
 import monitor from './monitor';
 
 export default class Server {
-    options: IServer;
-    app: express.Application;
+    private options: IServer;
+    private app: express.Application;
 
-    clientManager: ClientManager = new ClientManager();
-    topicManager: TopicManager = new TopicManager();
+    private clientManager: ClientManager = new ClientManager();
+    private topicManager: TopicManager = new TopicManager(this.clientManager);
 
     constructor(options: IServer) {
         this.options = {
@@ -41,7 +39,7 @@ export default class Server {
         }
     }
 
-    isRegisted(req: express.Request, res: express.Response, next: express.NextFunction) {
+    isRegisted(req: express.Request, _res: express.Response, next: express.NextFunction) {
         try {
             const uid = req.get('RadonUID');
             if (!uid) {
@@ -81,8 +79,8 @@ export default class Server {
 
     handleSubscribe(req: express.Request, res: express.Response, next: express.NextFunction) {
         try {
-            const { topic, mode }: { topic: string, mode: ModeEnum } = req.body;
-            this.topicManager.subscribe(req.uid!, topic, mode);
+            const { topic }: { topic: string } = req.body;
+            this.topicManager.subscribe(req.uid!, topic);
             res.status(200).send();
         } catch (error) {
             return next(error);

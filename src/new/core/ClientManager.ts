@@ -11,6 +11,10 @@ export default class ClientManager {
         return this.clients.find((client) => client.uid === uid);
     }
 
+    filterClients(uid: string[]) {
+        return this.clients.filter((client) => uid.includes(client.uid));
+    }
+
     createClient(host: string, port: string, path: string) {
         const client = this.clients.find((client) => client.host === host && client.port === port && client.path === path);
 
