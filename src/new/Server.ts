@@ -1,20 +1,24 @@
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
+import { ActionEnum } from '../@types/ActionEnum';
 import { IServer } from '../@types/IServer';
-import ConsumerManager from './core/ConsumerManager';
+import { ModeEnum } from '../@types/ModeEnum';
+import ClientManager from './core/ClientManager';
 import TopicManager from './core/TopicManager';
 
 export default class Server {
     options: IServer;
     app: express.Application;
 
-    consumerManager: ConsumerManager = new ConsumerManager();
+    clientManager: ClientManager = new ClientManager();
     topicManager: TopicManager = new TopicManager();
 
     constructor(options: IServer) {
         this.options = {
             port: options.port || 9999,
-            path: options.path || ''
+            path: options.path || '',
+            healthcheckEnabled: options.healthcheckEnabled || true,
+            healthcheckInterval: options.healthcheckInterval || 60 // seconds
         };
 
         this.app = options.app || express();
@@ -25,36 +29,71 @@ export default class Server {
         const router = express.Router();
         router.use(bodyParser.json());
         router.post('/register', this.handleRegister.bind(this));
-        router.post('/publish', this.handlePublish.bind(this));
-        router.post('/subscribe', this.handleSubscribe.bind(this));
-        router.post('/unsubscribe', this.handleUnsubscribe.bind(this));
+        router.post('/publish', this.isRegisted.bind(this), this.handlePublish.bind(this));
+        router.post('/subscribe', this.isRegisted.bind(this), this.handleSubscribe.bind(this));
+        router.post('/unsubscribe', this.isRegisted.bind(this), this.handleUnsubscribe.bind(this));
 
-        this.app.use(this.options.path, router);
+        this.app.use(this.options.path!, router);
 
         if (!hasApp) {
             this.app.listen(this.options.port);
         }
     }
 
+    isRegisted(req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const uid = req.get('RadonUID');
+            if (!uid) {
+                throw new Error('Client not registed');
+            }
+            const client = this.clientManager.findClient(uid);
+            if (!client) {
+                throw new Error('Client not registed');
+            }
+            req.uid = uid;
+            return next();
+        } catch (error) {
+            return next(error);
+        }
+    }
+
     handleRegister(req: express.Request, res: express.Response, next: express.NextFunction) {
         try {
             const { host, port, path } = req.body;
-            const uid = this.consumerManager.createConsumer(host, port, path);
+            const uid = this.clientManager.createClient(host, port, path);
             res.status(200).send({ uid });
         } catch (error) {
             return next(error);
         }
     }
 
-    handlePublish(req: express.Request, res: express.Response, _next: express.NextFunction) {
-
+    handlePublish(req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const { topic, action, message }: { topic: string, action: ActionEnum, message: IMessage } = req.body;
+            this.topicManager.publish(req.uid!, topic, action, message);
+            res.status(200).send();
+        } catch (error) {
+            return next(error);
+        }
     }
 
-    handleSubscribe(req: express.Request, res: express.Response, _next: express.NextFunction) {
-
+    handleSubscribe(req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const { topic, mode }: { topic: string, mode: ModeEnum } = req.body;
+            this.topicManager.subscribe(req.uid!, topic, mode);
+            res.status(200).send();
+        } catch (error) {
+            return next(error);
+        }
     }
 
-    handleUnsubscribe(req: express.Request, res: express.Response, _next: express.NextFunction) {
-
+    handleUnsubscribe(req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const { topic }: { topic: string } = req.body;
+            this.topicManager.unsubscribe(req.uid!, topic);
+            res.status(200).send();
+        } catch (error) {
+            return next(error);
+        }
     }
 }

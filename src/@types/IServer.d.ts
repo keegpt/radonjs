@@ -2,6 +2,8 @@ import * as express from 'express';
 
 interface IServer {
     app?: express.Application;
-    port: number;
-    path: string;
+    port?: number;
+    path?: string;
+    healthcheckEnabled: boolean;
+    healthcheckInterval: number;
 }
