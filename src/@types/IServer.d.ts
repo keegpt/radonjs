@@ -4,6 +4,6 @@ interface IServer {
     app?: express.Application;
     port?: number;
     path?: string;
-    healthcheckEnabled: boolean;
-    healthcheckInterval: number;
+    healthcheckEnabled?: boolean;
+    healthcheckInterval?: number;
 }

@@ -1,4 +1,4 @@
 interface ITopic {
     name: string;
-    queue: IQueue;
+    queue?: IQueue;
 }

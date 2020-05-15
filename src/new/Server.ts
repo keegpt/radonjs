@@ -5,6 +5,7 @@ import { IServer } from '../@types/IServer';
 import { ModeEnum } from '../@types/ModeEnum';
 import ClientManager from './core/ClientManager';
 import TopicManager from './core/TopicManager';
+import monitor from './monitor';
 
 export default class Server {
     options: IServer;
@@ -69,8 +70,9 @@ export default class Server {
 
     handlePublish(req: express.Request, res: express.Response, next: express.NextFunction) {
         try {
-            const { topic, action, message }: { topic: string, action: ActionEnum, message: IMessage } = req.body;
-            this.topicManager.publish(req.uid!, topic, action, message);
+            const { topic, message }: { topic: string, message: IMessage } = req.body;
+            monitor(`Message ${message.cid} by ${req.uid} has arrived, publishing into topic manager`);
+            this.topicManager.publish(req.uid!, topic, message);
             res.status(200).send();
         } catch (error) {
             return next(error);

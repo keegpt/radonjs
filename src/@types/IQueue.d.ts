@@ -1,3 +1,4 @@
 interface IQueue {
-    messages: IMessage[];
+    timeout?: number;
+    delay?: number;
 }
