@@ -1,6 +1,6 @@
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
-import { IServerOptions } from '../@types/IServerOptions';
+import { IServerOptions } from './@types/IServerOptions';
 import ClientManager from './core/ClientManager';
 import TopicManager from './core/TopicManager';
 import monitor from './monitor';
