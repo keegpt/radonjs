@@ -26,7 +26,13 @@ export default class TopicManager {
     }
 
     subscribe(uid: string, topicName: string) {
-        const topic = this.findTopic(topicName) || new Topic({ name: topicName }, this.clientManager);
+        let topic = this.findTopic(topicName);
+
+        if(!topic) {
+            topic = new Topic({ name: topicName }, this.clientManager);
+            this.topics.push(topic);
+        }
+
         topic.subscribe(uid);
     }
 

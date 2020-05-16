@@ -11,7 +11,7 @@ export default class Queue {
     private running: boolean = false;
     private messages: IMessage[] = [];
 
-    constructor(options: IQueueOptions, topic: Topic, clientManager: ClientManager) {
+    constructor(options: IQueueOptions = {}, topic: Topic, clientManager: ClientManager) {
         this.clientManager = clientManager;
         this.topic = topic;
         this.options = {
@@ -113,15 +113,17 @@ export default class Queue {
             }));
         }
 
-        function allSettled(promises: any[]) {
-            let wrappedPromises = promises.map((p: any) => Promise.resolve(p)
-                .then(
-                    val => ({ status: 'fulfilled', value: val }),
-                    err => ({ status: 'rejected', reason: err })));
-            return Promise.all(wrappedPromises);
-        }
+        // function allSettled(promises: any[]) {
+        //     let wrappedPromises = promises.map((p: any) => Promise.resolve(p)
+        //         .then(
+        //             val => ({ status: 'fulfilled', value: val }),
+        //             err => ({ status: 'rejected', reason: err })));
+        //     return Promise.all(wrappedPromises);
+        // }
 
-        const results = await allSettled(requests);
+        // const results = await allSettled(requests);
+
+        await Promise.all(requests);
 
         monitor(`Message ${message.cid} sent to consumers`);
 

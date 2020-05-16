@@ -19,8 +19,7 @@ import radon from '@keegpt/radonjs';
 
 const app = express();
 new radon.Server({
-    app,
-    path: '/radon'
+    app
 });
 serverApp.listen(8000);
 ```
@@ -33,16 +32,12 @@ import radon from '@keegpt/radonjs';
 const authMicroServiceApp = express();
 const authMicroService = new radon.Client({
     app: authMicroServiceApp,
-    host: 'http://localhost',
     port: 8001,
-    path: '/radon',
-    serverHost: 'http://localhost',
-    serverPort: 8000,
-    serverPath: '/radon'
+    serverPort: 8000
 });
 authMicroServiceApp.listen(8001);
 
-authMicroService.subscribe({ name: 'USER.GET', mode: 0 }, async (data: any) => {
+authMicroService.subscribe('USER.GET', async (data: any) => {
     const user = await db.query('SELECT * FROM users WHERE id = $1', data.id);
     return user;
 });
@@ -54,32 +49,28 @@ import radon from '@keegpt/radonjs';
 const anotherMicroServiceApp = express();
 const anotherMicroService = new radon.Client({
     app: anotherMicroServiceApp,
-    host: 'http://localhost',
     port: 8002,
-    path: '/radon',
-    serverHost: 'http://localhost',
-    serverPort: 8000,
-    serverPath: '/radon'
+    serverPort: 8000
 });
 anotherMicroServiceApp.listen(8002);
 
 (async () => {
-    const result = await anotherMicroService.publishAndGet('USER.GET', { id: 1 });
-    console.log(result);
+    const user = await anotherMicroService.get('USER.GET', { id: 1 });
+    console.log(user);
 })
 ```
 
 ## Todo
 Some of this are simple to do, i'm just trying to find time :(
-* Simplify configuration parameters
+* Ready event (to known when it can register and subscribe)
 * Remove request-promise dependency (use native http/https)
 * Allow to customize event timeout and concurrency values
-* Clients should have a unique id to handle some tasks, like unsubscribe
-* Create an event sub queue for handle responses, instead of creating a new event + queue for waiting responses
 * Create a system to get all updated stats from each event
 * Export modes interface to use when subscribing
 * A good error handling system
-* a good debug system
+* A good debug system
+* Integrate with redis
+* With redis we can create an event history to allow dead subscribers to get up and get updated about what happened in the system
 
 ## Docs
 
@@ -102,41 +93,27 @@ serverHost | Server host
 serverPort| Server port
 serverPath | Server internal radon router path
 
-### Event Modes
-
-Mode | Value | Description
-------------- | ------------- | -------------
-0 | ACKOWNLEDGE | Client just wants to receive information and do not need to return any data to the publisher
-1 | LOAD_BALANCE | Client wants to reply some data. It will load balance the requests with all other clients in load_balance
-
 ### Client methods
 
 #### subscribe(eventName, callback)
 ```js
 client.subscribe('EVENT_NAME', async (data: any) => {
     // logic
-    // default mode is acknowledge, so any return will not be delivery to the publisher
+    // we can return data to the publisher, just returning something in this function
 });
 ```
-#### subscribe({ name, mode }, callback)
-```js
-client.subscribe({ name: 'EVENT_NAME', mode: 1 }, async (data: any) => {
-    // logic
-    // in load_balance mode, you can return information to the publisher
-    return data;
-});
-```
-#### publish(eventName)
+
+#### send(eventName)
 ```js
 (async () => {
-    anotherMicroService.publish('EVENT_NAME', { some: 'data' });
+    anotherMicroService.send('EVENT_NAME', { some: 'data' });
 })
 ```
 
-#### publishAndGet(eventName, callback)
+#### get(eventName, callback)
 ```js
 (async () => {
-    const result = await anotherMicroService.publishAndGet('EVENT_NAME', { some: 'data' });
+    const result = await anotherMicroService.get('EVENT_NAME', { some: 'data' });
     console.log(result);
 })
 ```

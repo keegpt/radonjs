@@ -23,7 +23,7 @@ export default class Client {
             serverPath: options.serverPath || '/radon'
         };
 
-        this.serverEndpoint = `${options.serverHost}:${options.serverPort}${options.serverPath}`;
+        this.serverEndpoint = `${this.options.serverHost}:${this.options.serverPort}${this.options.serverPath}`;
         this.app = options.app || express();
         this.initApp(!!options.app);
     }
@@ -36,9 +36,7 @@ export default class Client {
         this.app.use(this.options.path!, router);
 
         if (!hasApp) {
-            this.app.listen(this.options.port, () => {
-                this.register();
-            });
+            this.app.listen(this.options.port);
         }
     }
 
@@ -91,7 +89,7 @@ export default class Client {
                     }
                 };
 
-                await this.subscribe(cid);
+                await this.subscribe(topic);
                 await this.requestServer('/publish', payload);
 
                 this.watching.push({
@@ -110,7 +108,7 @@ export default class Client {
     async handleTopic(req: express.Request, res: express.Response, _next: express.NextFunction) {
         const { topic, message, error }: { topic: string, message: IMessage, error: string } = req.body;
 
-        monitor(`Handling topic ${topic}`);
+        monitor(`I (${this.uid}) am handling topic ${topic}`);
 
         const index = this.watching.findIndex((item) => item.topic === topic && item.cid === message.cid);
 
@@ -153,7 +151,12 @@ export default class Client {
                         const payload = {
                             cid,
                             topic,
-                            data: result
+                            message: {
+                                uid: this.uid,
+                                cid,
+                                data: result,
+                                timestamp: new Date().getTime()
+                            }
                         };
 
                         await this.requestServer('/publish', payload);
@@ -164,7 +167,7 @@ export default class Client {
             }
         });
 
-        monitor(`Subscribed ${topic}`);
+        monitor(`I (${this.uid}) subscribed ${topic}`);
     }
 
     async unsubscribe(topic: string) {
@@ -180,7 +183,7 @@ export default class Client {
             this.subscribed.splice(index, 1);
         }
 
-        monitor(`Unsubscribed from ${topic}`);
+        monitor(`I (${this.uid}) unsubscribed ${topic}`);
     }
 
     requestServer(path: string, payload: any) {
