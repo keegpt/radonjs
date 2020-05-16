@@ -114,14 +114,14 @@ onReady | Ready to work callback
 })()
 ```
 
-#### send(eventName)
+#### send(eventName, data)
 ```js
 (() => {
     client.send('EVENT_NAME', { some: 'data' });
 })()
 ```
 
-#### get(eventName, callback)
+#### get(eventName, data)
 ```js
 (async () => {
     const result = await client.get('EVENT_NAME', { some: 'data' });
