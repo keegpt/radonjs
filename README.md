@@ -66,7 +66,7 @@ Some of this are simple to do, i'm just trying to find time :(
 * Remove request-promise dependency (use native http/https)
 * Allow to customize event timeout and concurrency values
 * Create a system to get all updated stats from each event
-* Export modes interface to use when subscribing
+* Fix build types (lol)
 * A good error handling system
 * A good debug system
 * Integrate with redis
