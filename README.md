@@ -106,17 +106,19 @@ onReady | Ready to work callback
 
 #### subscribe(eventName, callback)
 ```js
-client.subscribe('EVENT_NAME', async (data: any) => {
-    // logic
-    // we can return data to the publisher, just returning something in this function
-});
+(() => {
+    client.subscribe('EVENT_NAME', async (data: any) => {
+        // logic
+        // we can return data to the publisher, just returning something in this function
+    });
+})()
 ```
 
 #### send(eventName)
 ```js
-(async () => {
+(() => {
     client.send('EVENT_NAME', { some: 'data' });
-})
+})()
 ```
 
 #### get(eventName, callback)
@@ -124,7 +126,7 @@ client.subscribe('EVENT_NAME', async (data: any) => {
 (async () => {
     const result = await client.get('EVENT_NAME', { some: 'data' });
     console.log(result);
-})
+})()
 ```
 
 ## Contributing
