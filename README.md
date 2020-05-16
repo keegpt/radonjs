@@ -67,6 +67,7 @@ Some of this are simple to do, i'm just trying to find time :(
 * Allow to customize event timeout and concurrency values
 * Create a system to get all updated stats from each event
 * Fix build types (lol)
+* Implement a timeout in client side, for reject pending responses from server
 * A good error handling system
 * A good debug system
 * Integrate with redis
