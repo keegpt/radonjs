@@ -1,19 +1,22 @@
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
 import * as request from 'request-promise';
-import { IClientOptions } from '../@types/IClientOptions';
-import monitor from './monitor';
+import { IClientOptions } from './@types/IClientOptions';
 import cuid = require('cuid');
 
 export default class Client {
     private options: IClientOptions;
     private app: express.Application;
     private subscribed: { topic: string, callback: (cid: string, data: any) => any }[] = [];
-    private watching: { topic: string, cid: string, resolve: (data: any) => void, reject: (error: string) => void }[] = [];
+    private watching: { topic: string, cid: string, resolve: (data: any) => void, reject: (error: string) => void, timer: NodeJS.Timeout }[] = [];
     private serverEndpoint: string;
     private uid?: string;
 
-    constructor(options: IClientOptions) {
+    constructor(options?: IClientOptions) {
+        if (!options) {
+            options = {};
+        }
+
         this.options = {
             host: options.host || 'http://localhost',
             port: options.port || 9998,
@@ -92,11 +95,20 @@ export default class Client {
                 await this.subscribe(topic);
                 await this.requestServer('/publish', payload);
 
+                const timer = setTimeout(() => {
+                    const index = this.watching.findIndex((item) => item.topic === topic && item.cid === cid);
+                    if (index > -1) {
+                        this.watching.splice(index, 1);
+                        reject(new Error('Timeout'));
+                    }
+                }, 1000);
+
                 this.watching.push({
                     topic,
                     cid,
                     resolve,
-                    reject
+                    reject,
+                    timer
                 });
 
             } catch (error) {
@@ -108,12 +120,11 @@ export default class Client {
     async handleTopic(req: express.Request, res: express.Response, _next: express.NextFunction) {
         const { topic, message, error }: { topic: string, message: IMessage, error: string } = req.body;
 
-        monitor(`I (${this.uid}) am handling topic ${topic}`);
-
         const index = this.watching.findIndex((item) => item.topic === topic && item.cid === message.cid);
 
         if (index > -1) {
             const watching = this.watching[index];
+            clearTimeout(watching.timer);
 
             if (error) {
                 watching.reject(error);
@@ -144,30 +155,24 @@ export default class Client {
         this.subscribed.push({
             topic,
             callback: async (cid: string, data: any) => {
-                try {
-                    const result = await callback(data);
+                const result = await callback(data);
 
-                    if (result) {
-                        const payload = {
+                if (result) {
+                    const payload = {
+                        cid,
+                        topic,
+                        message: {
+                            uid: this.uid,
                             cid,
-                            topic,
-                            message: {
-                                uid: this.uid,
-                                cid,
-                                data: result,
-                                timestamp: new Date().getTime()
-                            }
-                        };
+                            data: result,
+                            timestamp: new Date().getTime()
+                        }
+                    };
 
-                        await this.requestServer('/publish', payload);
-                    }
-                } catch (error) {
-                    monitor(`Error while returning data to ${cid}: ${error.message}`);
+                    await this.requestServer('/publish', payload);
                 }
             }
         });
-
-        monitor(`I (${this.uid}) subscribed ${topic}`);
     }
 
     async unsubscribe(topic: string) {
@@ -182,8 +187,6 @@ export default class Client {
         if (index > -1) {
             this.subscribed.splice(index, 1);
         }
-
-        monitor(`I (${this.uid}) unsubscribed ${topic}`);
     }
 
     requestServer(path: string, payload: any) {

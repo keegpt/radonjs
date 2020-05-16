@@ -1,6 +1,6 @@
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
-import { IServerOptions } from '../@types/IServerOptions';
+import { IServerOptions } from './@types/IServerOptions';
 import ClientManager from './core/ClientManager';
 import TopicManager from './core/TopicManager';
 import monitor from './monitor';
@@ -12,12 +12,17 @@ export default class Server {
     private clientManager: ClientManager = new ClientManager();
     private topicManager: TopicManager = new TopicManager(this.clientManager);
 
-    constructor(options: IServerOptions) {
+    constructor(options?: IServerOptions) {
+        if (!options) {
+            options = {};
+        }
+
         this.options = {
             port: options.port || 9999,
             path: options.path || '/radon',
             healthcheckEnabled: options.healthcheckEnabled || true,
-            healthcheckInterval: options.healthcheckInterval || 60 // seconds
+            healthcheckInterval: options.healthcheckInterval || 60, // seconds
+            onReady: options.onReady
         };
 
         this.app = options.app || express();
@@ -35,7 +40,9 @@ export default class Server {
         this.app.use(this.options.path!, router);
 
         if (!hasApp) {
-            this.app.listen(this.options.port);
+            this.app.listen(this.options.port, this.options.onReady);
+        } else {
+            this.options.onReady && this.options.onReady();
         }
     }
 

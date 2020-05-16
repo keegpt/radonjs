@@ -1,6 +1,6 @@
 import * as express from 'express';
 
-interface IClientOptions {
+export interface IClientOptions {
     app?: express.Application;
     host?: string;
     port?: number;

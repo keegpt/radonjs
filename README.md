@@ -62,16 +62,12 @@ anotherMicroServiceApp.listen(8002);
 
 ## Todo
 Some of this are simple to do, i'm just trying to find time :(
-* Ready event (to known when it can register and subscribe)
 * Remove request-promise dependency (use native http/https)
 * Allow to customize event timeout and concurrency values
 * Create a system to get all updated stats from each event
-* Fix build types (lol)
-* Implement a timeout in client side, for reject pending responses from server
-* A good error handling system
-* A good debug system
-* Integrate with redis
-* With redis we can create an event history to allow dead subscribers to get up and get updated about what happened in the system
+* A error handling system
+* A debug system
+* A microservice recovery system
 
 ## Docs
 

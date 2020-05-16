@@ -12,11 +12,11 @@
         "strict": true,
         "typeRoots": [
             "node_modules/@types",
-            "@types"
+            "src/@types"
         ]
     },
     "include": [
-        "src", "@types"
+        "src"
     ],
     "exclude": [
         "node_modules",
