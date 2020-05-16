@@ -2,7 +2,7 @@
 
 An event backbone for microservices architectures using express
 
-Version: ALPHA
+Version: Alpha.2
 
 ## Installation
 
@@ -15,49 +15,59 @@ npm install @keegpt/radonjs
 ## Server
 
 ```js
-import radon from '@keegpt/radonjs';
+const radon = require('../lib').default;
 
-const app = express();
-new radon.Server({
-    app
-});
-serverApp.listen(8000);
+(() => {
+    const server = new radon.Server();
+})();
 ```
 
 ## Clients
 
 ```js
-import radon from '@keegpt/radonjs';
+const radon = require('../lib').default;
 
-const authMicroServiceApp = express();
-const authMicroService = new radon.Client({
-    app: authMicroServiceApp,
-    port: 8001,
-    serverPort: 8000
-});
-authMicroServiceApp.listen(8001);
+(() => {
+    const client = new radon.Client({
+        port: 3011,
+        onReady: async () => {
+            await client.register();
 
-authMicroService.subscribe('USER.GET', async (data: any) => {
-    const user = await db.query('SELECT * FROM users WHERE id = $1', data.id);
-    return user;
-});
+            client.subscribe('test', async (data) => {
+                console.log('3011 received:', data);
+                return { success: true };
+            });
+
+            client.subscribe('another/test', async (data) => {
+                console.log('3011 received:', data);
+            });
+        }
+    });
+})();
 ```
 
 ```js
-import radon from '@keegpt/radonjs';
+const radon = require('../lib').default;
 
-const anotherMicroServiceApp = express();
-const anotherMicroService = new radon.Client({
-    app: anotherMicroServiceApp,
-    port: 8002,
-    serverPort: 8000
-});
-anotherMicroServiceApp.listen(8002);
+(() => {
+    const client = new radon.Client({
+        port: 3012,
+        onReady: async () => {
+            await client.register();
 
-(async () => {
-    const user = await anotherMicroService.get('USER.GET', { id: 1 });
-    console.log(user);
-})
+            setTimeout(async () => {
+                try {
+                    const result = await client.get('test', { some: 'data' });
+                    console.log('3012 received', result);
+
+                    client.send('another/test', { more: 'data' });
+                } catch (error) {
+                    console.error(error)
+                }
+            }, 1000);
+        }
+    });
+})();
 ```
 
 ## Todo
@@ -68,6 +78,7 @@ Some of this are simple to do, i'm just trying to find time :(
 * A error handling system
 * A debug system
 * A microservice recovery system
+* Implement redis as core
 
 ## Docs
 
@@ -89,6 +100,7 @@ path | Internal radon router path
 serverHost | Server host
 serverPort| Server port
 serverPath | Server internal radon router path
+onReady | Ready to work callback
 
 ### Client methods
 
@@ -103,14 +115,14 @@ client.subscribe('EVENT_NAME', async (data: any) => {
 #### send(eventName)
 ```js
 (async () => {
-    anotherMicroService.send('EVENT_NAME', { some: 'data' });
+    client.send('EVENT_NAME', { some: 'data' });
 })
 ```
 
 #### get(eventName, callback)
 ```js
 (async () => {
-    const result = await anotherMicroService.get('EVENT_NAME', { some: 'data' });
+    const result = await client.get('EVENT_NAME', { some: 'data' });
     console.log(result);
 })
 ```

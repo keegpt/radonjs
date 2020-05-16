@@ -13,7 +13,6 @@ const radon = require('../lib').default;
 
             client.subscribe('another/test', async (data) => {
                 console.log('3011 received:', data);
-                return { success: true };
             });
         }
     });
