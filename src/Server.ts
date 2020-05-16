@@ -1,81 +1,103 @@
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
-import Event from './Event';
-import { IClient, IEvent, IServerOptions } from './types';
+import { IServerOptions } from './@types/IServerOptions';
+import ClientManager from './core/ClientManager';
+import TopicManager from './core/TopicManager';
+import monitor from './monitor';
 
 export default class Server {
-    router: express.Router;
-    events: Event[] = [];
+    private options: IServerOptions;
+    private app: express.Application;
 
-    constructor(options: IServerOptions) {
-        this.router = express.Router();
-        this.router.use(bodyParser.json());
-        this.router.post('/unsubscribe', this.handleUnsubscribe.bind(this));
-        this.router.post('/subscribe', this.handleSubscribe.bind(this));
-        this.router.post('/publish', this.handlePublish.bind(this));
+    private clientManager: ClientManager = new ClientManager();
+    private topicManager: TopicManager = new TopicManager(this.clientManager);
 
-        options.app.use(options.path, this.router);
+    constructor(options?: IServerOptions) {
+        if (!options) {
+            options = {};
+        }
+
+        this.options = {
+            port: options.port || 9999,
+            path: options.path || '/radon',
+            healthcheckEnabled: options.healthcheckEnabled || true,
+            healthcheckInterval: options.healthcheckInterval || 60 // seconds
+        };
+
+        this.app = options.app || express();
+        this.initApp(!!options.app);
     }
 
-    handleUnsubscribe(req: express.Request, res: express.Response, _next: express.NextFunction) {
-        const { client, event }: { client: IClient, event: IEvent } = req.body;
+    initApp(hasApp: boolean) {
+        const router = express.Router();
+        router.use(bodyParser.json());
+        router.post('/register', this.handleRegister.bind(this));
+        router.post('/publish', this.isRegisted.bind(this), this.handlePublish.bind(this));
+        router.post('/subscribe', this.isRegisted.bind(this), this.handleSubscribe.bind(this));
+        router.post('/unsubscribe', this.isRegisted.bind(this), this.handleUnsubscribe.bind(this));
 
-        const mEvent = this.getEvent(event.name);
+        this.app.use(this.options.path!, router);
 
-        if (mEvent) {
-            mEvent.unsubscribe(client);
+        if (!hasApp) {
+            this.app.listen(this.options.port);
+        }
+    }
 
-            if (mEvent.subscribers.length === 0) {
-                this.delEvent(event.name);
+    isRegisted(req: express.Request, _res: express.Response, next: express.NextFunction) {
+        try {
+            const uid = req.get('RadonUID');
+            if (!uid) {
+                throw new Error('Client not registed');
             }
+            const client = this.clientManager.findClient(uid);
+            if (!client) {
+                throw new Error('Client not registed');
+            }
+            req.uid = uid;
+            return next();
+        } catch (error) {
+            return next(error);
         }
-
-        return res.status(200).send();
     }
 
-    handleSubscribe(req: express.Request, res: express.Response, _next: express.NextFunction) {
-        const { client, event }: { client: IClient, event: IEvent } = req.body;
-
-        let mEvent = this.getEvent(event.name);
-
-        if (!mEvent) {
-            mEvent = new Event({
-                name: event.name
-            });
-
-            this.events.push(mEvent);
+    handleRegister(req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const { host, port, path } = req.body;
+            const uid = this.clientManager.createClient(host, port, path);
+            res.status(200).send({ uid });
+        } catch (error) {
+            return next(error);
         }
-
-        mEvent.subscribe(client, event.mode);
-
-        return res.status(200).send();
     }
 
-    handlePublish(req: express.Request, res: express.Response, _next: express.NextFunction) {
-        const { cid, data, event } : { cid: string, data: any, event: IEvent } = req.body;
-
-        const mEvent = this.getEvent(event.name);
-
-        if (mEvent) {
-            mEvent.publish({
-                cid,
-                data
-            });
+    handlePublish(req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const { topic, message }: { topic: string, message: IMessage } = req.body;
+            monitor(`Message ${message.cid} by ${req.uid} has arrived, publishing into topic manager`);
+            this.topicManager.publish(topic, message);
+            res.status(200).send();
+        } catch (error) {
+            return next(error);
         }
-
-        return res.status(200).send();
     }
 
-    getEvent(name: string) {
-        const event = this.events.find((event) => event.options.name === name);
-        return event ? event : null;
+    handleSubscribe(req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const { topic }: { topic: string } = req.body;
+            this.topicManager.subscribe(req.uid!, topic);
+            res.status(200).send();
+        } catch (error) {
+            return next(error);
+        }
     }
 
-    delEvent(name: string) {
-        const index = this.events.findIndex((event) => event.options.name === name);
-
-        if (index > -1) {
-            this.events.splice(index, 1);
+    handleUnsubscribe(req: express.Request, res: express.Response, next: express.NextFunction) {
+        try {
+            const { topic }: { topic: string } = req.body;
+            this.topicManager.unsubscribe(req.uid!, topic);
+            res.status(200).send();
+        } catch (error) {
+            return next(error);
         }
     }
 }

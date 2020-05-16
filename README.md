@@ -2,7 +2,7 @@
 
 An event backbone for microservices architectures using express
 
-Version: ALPHA
+Version: Alpha.2
 
 ## Installation
 
@@ -15,71 +15,70 @@ npm install @keegpt/radonjs
 ## Server
 
 ```js
-import radon from '@keegpt/radonjs';
+const radon = require('../lib').default;
 
-const app = express();
-new radon.Server({
-    app,
-    path: '/radon'
-});
-serverApp.listen(8000);
+(() => {
+    const server = new radon.Server();
+})();
 ```
 
 ## Clients
 
 ```js
-import radon from '@keegpt/radonjs';
+const radon = require('../lib').default;
 
-const authMicroServiceApp = express();
-const authMicroService = new radon.Client({
-    app: authMicroServiceApp,
-    host: 'http://localhost',
-    port: 8001,
-    path: '/radon',
-    serverHost: 'http://localhost',
-    serverPort: 8000,
-    serverPath: '/radon'
-});
-authMicroServiceApp.listen(8001);
+(() => {
+    const client = new radon.Client({
+        port: 3011,
+        onReady: async () => {
+            await client.register();
 
-authMicroService.subscribe({ name: 'USER.GET', mode: 0 }, async (data: any) => {
-    const user = await db.query('SELECT * FROM users WHERE id = $1', data.id);
-    return user;
-});
+            client.subscribe('test', async (data) => {
+                console.log('3011 received:', data);
+                return { success: true };
+            });
+
+            client.subscribe('another/test', async (data) => {
+                console.log('3011 received:', data);
+            });
+        }
+    });
+})();
 ```
 
 ```js
-import radon from '@keegpt/radonjs';
+const radon = require('../lib').default;
 
-const anotherMicroServiceApp = express();
-const anotherMicroService = new radon.Client({
-    app: anotherMicroServiceApp,
-    host: 'http://localhost',
-    port: 8002,
-    path: '/radon',
-    serverHost: 'http://localhost',
-    serverPort: 8000,
-    serverPath: '/radon'
-});
-anotherMicroServiceApp.listen(8002);
+(() => {
+    const client = new radon.Client({
+        port: 3012,
+        onReady: async () => {
+            await client.register();
 
-(async () => {
-    const result = await anotherMicroService.publishAndGet('USER.GET', { id: 1 });
-    console.log(result);
-})
+            setTimeout(async () => {
+                try {
+                    const result = await client.get('test', { some: 'data' });
+                    console.log('3012 received', result);
+
+                    client.send('another/test', { more: 'data' });
+                } catch (error) {
+                    console.error(error)
+                }
+            }, 1000);
+        }
+    });
+})();
 ```
 
 ## Todo
 Some of this are simple to do, i'm just trying to find time :(
-* Simplify configuration parameters
 * Remove request-promise dependency (use native http/https)
 * Allow to customize event timeout and concurrency values
-* Clients should have a unique id to handle some tasks, like unsubscribe
-* Create an event sub queue for handle responses, instead of creating a new event + queue for waiting responses
 * Create a system to get all updated stats from each event
-* Export modes interface to use when subscribing
-* A good error handling system
-* a good debug system
+* A error handling system
+* A debug system
+* A microservice recovery system
+* Implement redis as core
 
 ## Docs
 
@@ -101,44 +100,33 @@ path | Internal radon router path
 serverHost | Server host
 serverPort| Server port
 serverPath | Server internal radon router path
-
-### Event Modes
-
-Mode | Value | Description
-------------- | ------------- | -------------
-0 | ACKOWNLEDGE | Client just wants to receive information and do not need to return any data to the publisher
-1 | LOAD_BALANCE | Client wants to reply some data. It will load balance the requests with all other clients in load_balance
+onReady | Ready to work callback
 
 ### Client methods
 
 #### subscribe(eventName, callback)
 ```js
-client.subscribe('EVENT_NAME', async (data: any) => {
-    // logic
-    // default mode is acknowledge, so any return will not be delivery to the publisher
-});
-```
-#### subscribe({ name, mode }, callback)
-```js
-client.subscribe({ name: 'EVENT_NAME', mode: 1 }, async (data: any) => {
-    // logic
-    // in load_balance mode, you can return information to the publisher
-    return data;
-});
-```
-#### publish(eventName)
-```js
-(async () => {
-    anotherMicroService.publish('EVENT_NAME', { some: 'data' });
-})
+(() => {
+    client.subscribe('EVENT_NAME', async (data: any) => {
+        // logic
+        // we can return data to the publisher, just returning something in this function
+    });
+})()
 ```
 
-#### publishAndGet(eventName, callback)
+#### send(eventName, data)
+```js
+(() => {
+    client.send('EVENT_NAME', { some: 'data' });
+})()
+```
+
+#### get(eventName, data)
 ```js
 (async () => {
-    const result = await anotherMicroService.publishAndGet('EVENT_NAME', { some: 'data' });
+    const result = await client.get('EVENT_NAME', { some: 'data' });
     console.log(result);
-})
+})()
 ```
 
 ## Contributing
