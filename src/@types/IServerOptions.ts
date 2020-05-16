@@ -6,5 +6,4 @@ export interface IServerOptions {
     path?: string;
     healthcheckEnabled?: boolean;
     healthcheckInterval?: number;
-    onReady?: () => void;
 }

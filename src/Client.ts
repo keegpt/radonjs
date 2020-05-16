@@ -23,7 +23,8 @@ export default class Client {
             path: options.path || '/radon',
             serverHost: options.serverHost || 'http://localhost',
             serverPort: options.serverPort || 9999,
-            serverPath: options.serverPath || '/radon'
+            serverPath: options.serverPath || '/radon',
+            onReady: options.onReady
         };
 
         this.serverEndpoint = `${this.options.serverHost}:${this.options.serverPort}${this.options.serverPath}`;
@@ -39,7 +40,9 @@ export default class Client {
         this.app.use(this.options.path!, router);
 
         if (!hasApp) {
-            this.app.listen(this.options.port);
+            this.app.listen(this.options.port, this.options.onReady);
+        } else {
+            this.options.onReady && this.options.onReady();
         }
     }
 

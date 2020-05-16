@@ -8,4 +8,5 @@ export interface IClientOptions {
     serverHost?: string;
     serverPort?: number;
     serverPath?: string;
+    onReady?: () => void;
 }

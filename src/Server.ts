@@ -21,8 +21,7 @@ export default class Server {
             port: options.port || 9999,
             path: options.path || '/radon',
             healthcheckEnabled: options.healthcheckEnabled || true,
-            healthcheckInterval: options.healthcheckInterval || 60, // seconds
-            onReady: options.onReady
+            healthcheckInterval: options.healthcheckInterval || 60 // seconds
         };
 
         this.app = options.app || express();
@@ -40,9 +39,7 @@ export default class Server {
         this.app.use(this.options.path!, router);
 
         if (!hasApp) {
-            this.app.listen(this.options.port, this.options.onReady);
-        } else {
-            this.options.onReady && this.options.onReady();
+            this.app.listen(this.options.port);
         }
     }
 
